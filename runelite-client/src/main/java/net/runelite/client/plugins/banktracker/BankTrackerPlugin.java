@@ -6,6 +6,7 @@ import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -29,6 +30,9 @@ public class BankTrackerPlugin extends Plugin {
 
     @Inject
     private ClientToolbar clientToolbar;
+
+    @Inject
+    private ItemManager itemManager;
 
     @Inject
     private Client client;
@@ -103,6 +107,15 @@ public class BankTrackerPlugin extends Plugin {
             }
             return folder;
         }
+        return null;
+    }
+
+    public TrackingCollection getTrackingCollection() {
+        final File storageFolder = getStorageFolder();
+        if (storageFolder != null && storageFolder.exists()) {
+            return TrackingCollection.load(itemManager, storageFolder);
+        }
+        log.warn("Storage folder not found at {}", storageFolder.getAbsolutePath());
         return null;
     }
 }
