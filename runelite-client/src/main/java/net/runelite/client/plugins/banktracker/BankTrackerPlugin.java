@@ -115,7 +115,6 @@ public class BankTrackerPlugin extends Plugin {
         if (storageFolder != null && storageFolder.exists()) {
             return TrackingCollection.load(itemManager, storageFolder);
         }
-        log.warn("Storage folder not found at {}", storageFolder.getAbsolutePath());
         return null;
     }
 }
