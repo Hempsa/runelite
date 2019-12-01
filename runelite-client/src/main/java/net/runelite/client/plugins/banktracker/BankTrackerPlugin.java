@@ -97,7 +97,7 @@ public class BankTrackerPlugin extends Plugin {
         }
     }
 
-    private File getStorageFolder() {
+    public File getStorageFolder() {
         final Player localPlayer = client.getLocalPlayer();
         if (localPlayer != null) {
             final File folder = new File(BANKTRACKER_DIR, localPlayer.getName());
