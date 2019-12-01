@@ -79,7 +79,7 @@ public class BankTrackerPlugin extends Plugin {
             for (Item item : items) {
                 final int id = item.getId();
                 final int quantity = item.getQuantity();
-                if (quantity > config.minQuantity()) {
+                if (quantity >= config.minQuantity()) {
                     container.addItem(new TrackingItem(id, quantity));
                 }
             }

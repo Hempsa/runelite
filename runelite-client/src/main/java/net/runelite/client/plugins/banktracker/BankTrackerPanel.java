@@ -20,6 +20,7 @@ public class BankTrackerPanel extends PluginPanel {
         add(clearUserData);
         // TODO
     }
+
     @Override
     public void onDeactivate() {
     }
