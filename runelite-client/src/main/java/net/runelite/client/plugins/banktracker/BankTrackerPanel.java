@@ -32,10 +32,9 @@ public class BankTrackerPanel extends PluginPanel {
                 if (files.length > 0) {
                     int result = JOptionPane.showConfirmDialog(null, "Are you sure?", "Clear user data", JOptionPane.YES_NO_CANCEL_OPTION);
                     if (result == 0) {
-                        storageFolder.delete();
-                        System.out.println("Yes clicked");
-                    } else if (result == 1) {
-                        System.out.println("No clicked");
+                        for (File file : files) {
+                            file.delete();
+                        }
                     }
                 }
             }

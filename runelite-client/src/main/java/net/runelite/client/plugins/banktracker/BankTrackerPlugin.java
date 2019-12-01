@@ -74,25 +74,27 @@ public class BankTrackerPlugin extends Plugin {
         final int containerId = event.getContainerId();
         if (containerId == InventoryID.BANK.getId()) {
             long now = System.currentTimeMillis();
-            ItemContainer bankContainer = client.getItemContainer(InventoryID.BANK);
-            if (bankContainer == null) {
-                return;
-            }
-            final Item[] items = bankContainer.getItems();
-            TrackingContainer container = new TrackingContainer(now);
-            for (Item item : items) {
-                final int id = item.getId();
-                final int quantity = item.getQuantity();
-                if (quantity >= config.minQuantity()) {
-                    container.addItem(new TrackingItem(id, quantity));
+            if (lastUpdate == null || (lastUpdate + config.recurrentDelay() * 1000) < now) {
+                ItemContainer bankContainer = client.getItemContainer(InventoryID.BANK);
+                if (bankContainer == null) {
+                    return;
                 }
-            }
-            final File storageFolder = getStorageFolder();
-            if (storageFolder != null) {
-                container.save(new File(getStorageFolder(), container.getTimestamp() + ".properties"));
-                lastUpdate = System.currentTimeMillis();
-            } else {
-                log.warn("Storage folder not found.");
+                final Item[] items = bankContainer.getItems();
+                TrackingContainer container = new TrackingContainer(now);
+                for (Item item : items) {
+                    final int id = item.getId();
+                    final int quantity = item.getQuantity();
+                    if (quantity >= config.minQuantity()) {
+                        container.addItem(new TrackingItem(id, quantity));
+                    }
+                }
+                final File storageFolder = getStorageFolder();
+                if (storageFolder != null) {
+                    container.save(new File(getStorageFolder(), container.getTimestamp() + ".properties"));
+                    lastUpdate = System.currentTimeMillis();
+                } else {
+                    log.warn("Storage folder not found.");
+                }
             }
         }
     }
