@@ -74,32 +74,34 @@ public class BankTrackerPlugin extends Plugin {
         final int containerId = event.getContainerId();
         if (containerId == InventoryID.BANK.getId()) {
             long now = System.currentTimeMillis();
-            ItemContainer bankContainer = client.getItemContainer(InventoryID.BANK);
-            if (bankContainer == null) {
-                return;
-            }
-            final Item[] items = bankContainer.getItems();
-            TrackingContainer container = new TrackingContainer(now);
-            for (Item item : items) {
-                final int id = item.getId();
-                final String name = itemManager.getItemComposition(id).getName();
-                final int quantity = item.getQuantity();
-
-                if (quantity >= config.minQuantity()) {
-                    container.addItem(new TrackingItem(id, name, quantity));
+            if (lastUpdate == null || (lastUpdate + config.recurrentDelay() * 1000) < now) {
+                ItemContainer bankContainer = client.getItemContainer(InventoryID.BANK);
+                if (bankContainer == null) {
+                    return;
                 }
-            }
-            final File storageFolder = getStorageFolder();
-            if (storageFolder != null) {
-                container.save(new File(getStorageFolder(), container.getTimestamp() + ".bank"));
-                lastUpdate = System.currentTimeMillis();
-            } else {
-                log.warn("Storage folder not found.");
+                final Item[] items = bankContainer.getItems();
+                TrackingContainer container = new TrackingContainer(now);
+                for (Item item : items) {
+                    final int id = item.getId();
+                    final String name = itemManager.getItemComposition(id).getName();
+                    final int quantity = item.getQuantity();
+
+                    if (quantity >= config.minQuantity()) {
+                        container.addItem(new TrackingItem(id, name, quantity));
+                    }
+                }
+                final File storageFolder = getStorageFolder();
+                if (storageFolder != null) {
+                    container.save(new File(getStorageFolder(), container.getTimestamp() + ".bank"));
+                    lastUpdate = System.currentTimeMillis();
+                } else {
+                    log.warn("Storage folder not found.");
+                }
             }
         }
     }
 
-    private File getStorageFolder() {
+    public File getStorageFolder() {
         final Player localPlayer = client.getLocalPlayer();
         if (localPlayer != null) {
             final File folder = new File(BANKTRACKER_DIR, localPlayer.getName());
