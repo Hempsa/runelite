@@ -27,4 +27,6 @@ public interface BankTrackerConfig extends Config {
         return 1;
     }
 
+    // TODO: option to count and display total potion doses instead of item count
+
 }
