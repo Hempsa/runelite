@@ -115,7 +115,7 @@ public class BankTrackerPlugin extends Plugin {
     public TrackingCollection getTrackingCollection() {
         final File storageFolder = getStorageFolder();
         if (storageFolder != null && storageFolder.exists()) {
-            return TrackingCollection.load(itemManager, storageFolder);
+            return TrackingCollection.load(storageFolder);
         }
         return null;
     }

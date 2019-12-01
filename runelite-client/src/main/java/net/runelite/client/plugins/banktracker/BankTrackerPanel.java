@@ -1,17 +1,15 @@
 package net.runelite.client.plugins.banktracker;
 
-import net.runelite.api.Client;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 
 import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class BankTrackerPanel extends PluginPanel {
 
-    JButton showGraphButton = new JButton("Show data");
+    JButton showGraphButton = new JButton("Show user data");
     JButton clearUserDataButton = new JButton("Clear user data");
 
     private BankTrackerPlugin plugin;

@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.banktracker;
 
 import lombok.Getter;
-import net.runelite.api.ItemComposition;
 import net.runelite.client.game.ItemManager;
 
 import java.io.File;
@@ -19,7 +18,7 @@ public class TrackingCollection {
         overviewMap = new HashMap<>();
     }
 
-    public static TrackingCollection load(final ItemManager itemManager, final File file) {
+    public static TrackingCollection load(final File file) {
         TrackingCollection ret = new TrackingCollection();
         final File[] entries = file.listFiles();
         for (final File entry : entries) {
