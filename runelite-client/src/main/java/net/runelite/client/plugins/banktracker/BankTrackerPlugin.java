@@ -82,14 +82,16 @@ public class BankTrackerPlugin extends Plugin {
             TrackingContainer container = new TrackingContainer(now);
             for (Item item : items) {
                 final int id = item.getId();
+                final String name = itemManager.getItemComposition(id).getName();
                 final int quantity = item.getQuantity();
+
                 if (quantity >= config.minQuantity()) {
-                    container.addItem(new TrackingItem(id, quantity));
+                    container.addItem(new TrackingItem(id, name, quantity));
                 }
             }
             final File storageFolder = getStorageFolder();
             if (storageFolder != null) {
-                container.save(new File(getStorageFolder(), container.getTimestamp() + ".properties"));
+                container.save(new File(getStorageFolder(), container.getTimestamp() + ".bank"));
                 lastUpdate = System.currentTimeMillis();
             } else {
                 log.warn("Storage folder not found.");

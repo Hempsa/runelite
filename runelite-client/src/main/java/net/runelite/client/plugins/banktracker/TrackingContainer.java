@@ -3,44 +3,32 @@ package net.runelite.client.plugins.banktracker;
 import lombok.Getter;
 
 import java.io.*;
-import java.text.NumberFormat;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
-public class TrackingContainer {
+public class TrackingContainer implements Serializable {
 
     @Getter
     private final long timestamp;
 
-    private List<TrackingItem> items = new LinkedList<>();
+    private List<TrackingItem> items = new ArrayList<TrackingItem>();
 
     /**
-     * Used when loading {@link TrackingContainer} items from the local file system
+     * Used when loading {@link TrackingContainer} from local file system
      *
-     * @param file properties file
-     * @return {@link TrackingContainer}
+     * @param file {@link File}
      */
-    public static TrackingContainer load(final File file) {
-        try (FileInputStream stream = new FileInputStream(file)) {
-            final long timestamp = Long.parseLong(file.getName().split(".")[0]);
-            TrackingContainer container = new TrackingContainer(timestamp);
-            Properties properties = new Properties();
-            properties.load(stream);
-            properties.forEach((key, value) -> {
-                try {
-                    final int id = Integer.parseInt((String) key);
-                    final int quantity = Integer.parseInt((String) value);
-                    container.items.add(new TrackingItem(id, quantity));
-                } catch (NumberFormatException e) {
-                    e.printStackTrace();
-                }
-            });
+    public static TrackingContainer load(File file) {
+        // TODO: test this
+        try (FileInputStream  stream = new FileInputStream (file)) {
+            ObjectInputStream in = new ObjectInputStream(stream);
+            TrackingContainer container = (TrackingContainer) in.readObject();
+            in.close();
+            System.out.println(String.format("Loaded TrackingContainer %d", container.timestamp));
             return container;
-        } catch (NumberFormatException | IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
-            return null;
         }
+        return null;
     }
 
     /**
@@ -49,12 +37,11 @@ public class TrackingContainer {
      * @param file {@link File}
      */
     public void save(File file) {
+        // TODO: test this
         try (FileOutputStream stream = new FileOutputStream(file)) {
-            Properties properties = new Properties();
-            for (TrackingItem item : this.items) {
-                properties.put(String.valueOf(item.getId()), String.valueOf(item.getQuantity()));
-            }
-            properties.store(stream, null);
+            ObjectOutputStream out = new ObjectOutputStream(stream);
+            out.writeObject(this);
+            out.close();
             System.out.println(String.format("Saved TrackingContainer %d to local file system", timestamp));
         } catch (IOException e) {
             e.printStackTrace();
@@ -74,7 +61,7 @@ public class TrackingContainer {
     }
 
     public void removeItem(TrackingItem item) {
-        this.items.remove(item);
+        this.items.remove(item.getId());
     }
 
 }

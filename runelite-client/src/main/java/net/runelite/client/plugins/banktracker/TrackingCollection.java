@@ -5,7 +5,9 @@ import net.runelite.api.ItemComposition;
 import net.runelite.client.game.ItemManager;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TrackingCollection {
@@ -23,17 +25,35 @@ public class TrackingCollection {
         for (final File entry : entries) {
             TrackingContainer container = TrackingContainer.load(entry);
             for (TrackingItem item : container.getItems()) {
-                final ItemComposition composition = itemManager.getItemComposition(item.getId());
-                if (composition != null) {
-                    final String itemName = composition.getName();
-                    Map<Long, Integer> map = ret.getOverviewMap().getOrDefault(itemName, new HashMap<>());
-                    map.put(container.getTimestamp(), item.getQuantity());
-                    if (!ret.getOverviewMap().containsKey(itemName)) {
-                        ret.getOverviewMap().put(itemName, map);
-                    }
+                Map<Long, Integer> map = ret.getOverviewMap().getOrDefault(item.getName(), new HashMap<>());
+                map.put(container.getTimestamp(), item.getQuantity());
+                if (!ret.getOverviewMap().containsKey(item.getName())) {
+                    ret.getOverviewMap().put(item.getName(), map);
                 }
             }
         }
         return ret;
+    }
+
+    /**
+     * @param itemName
+     * @return time->item count map for a given item
+     */
+    public Map<Long, Integer> getItemCounts(String itemName){
+        return overviewMap.get(itemName);
+    }
+
+    /**
+     * @param partialName
+     * @return matching item names for a partial item name string. Only returns item names of items that
+     * have been tracked.
+     */
+    public List<String> getMatchingItemNames(String partialName){
+        List<String> result = new ArrayList<String>();
+        for(String name : overviewMap.keySet()){
+            if(name.contains(partialName))
+                result.add(name);
+        }
+        return result;
     }
 }
