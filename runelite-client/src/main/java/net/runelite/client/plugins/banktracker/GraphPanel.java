@@ -8,6 +8,7 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
@@ -23,8 +24,8 @@ public class GraphPanel {
     private JRadioButton radioTime90d;
     private JRadioButton radioTimeMax;
     private JCheckBox checkMedian;
-    private JCheckBox checkInterpolation;
 
+    private Graph graph = null;
     private BufferedImage graphImage = null;
 
     private TrackingCollection trackingcollection;
@@ -60,7 +61,6 @@ public class GraphPanel {
         radioTimeMax.addActionListener((e)->updateGraph());
 
         checkMedian.addActionListener((e) -> updateGraph());
-        checkInterpolation.addActionListener((e) -> updateGraph());
 
         this.trackingcollection = trackingcollection;
         itemNames = new ArrayList<>(trackingcollection.getOverviewMap().keySet());
@@ -93,9 +93,20 @@ public class GraphPanel {
             }
         });
 
+        graphPanel.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                graphMouseMoved(e.getX(), e.getY());
+            }
+        });
+
         selectedItems = new HashSet<>();
         updateList();
         updateGraph();
+    }
+
+    private void createUIComponents() {
+        graphPanel = new DrawableJPanel();
     }
 
     /**
@@ -116,154 +127,64 @@ public class GraphPanel {
         }
     }
 
+
     private void updateGraph() {
         // TODO: handle resizing window somewhere...
         int width = graphPanel.getWidth();
         int height = graphPanel.getHeight();
         if(width <= 0 || height <= 0)
             return;
-        graphImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = graphImage.createGraphics();
 
-        g.setColor(Color.GRAY);
-        g.fillRect(0, 0, width, height);
-        g.setColor(Color.DARK_GRAY);
-        g.setStroke(new BasicStroke(1));
-        for(float rX = 0; rX <= 1.01; rX += 0.1){
-            for(float rY = 0; rY <= 1.01; rY += 0.1){
-                int x = (int)(width * rX);
-                int y = height - (int)(height * rY);
-                g.drawLine(0, y, width, y);
-                g.drawLine(x, 0, x, height);
-            }
-        }
+        int timeDays = 0; // default: max
+        if(radioTime7d.isSelected())
+            timeDays = 7;
+        else if(radioTime30d.isSelected())
+            timeDays = 30;
+        else if(radioTime90d.isSelected())
+            timeDays = 90;
 
-        if(selectedItems.size() == 0) {
-            g.drawString("Please select some items", width / 2 - 100, height / 2);
-            return;
-        }
-
-        // Graph bounds
-        long now = System.currentTimeMillis();
-        long minTime;
-        long maxTime = now;
-        long dayLength = 24 * 60 * 60 * 1000;
-        if(radioTime7d.isSelected()){
-            minTime = now - 7 * dayLength; // TODO: UNCOMMENT
-        } else if(radioTime30d.isSelected()){
-            minTime = now - 30*dayLength;
-        } else if(radioTime90d.isSelected()){
-            minTime = now - 90*dayLength;
-        } else {
-            // max
-            minTime = Long.MAX_VALUE;
-            for(String name : selectedItems){
-                Map<Long, Integer> timesToCounts = trackingcollection.getItemCounts(name);
-                for(Long time : timesToCounts.keySet()){
-                    minTime = Math.min(minTime, time);
-                }
-            }
-        }
-
-        int minCount = 0, maxCount = Integer.MIN_VALUE;
-
-        for(String name : selectedItems){
-            Map<Long, Integer> timesToCounts = trackingcollection.getItemCounts(name);
-            for(Integer count : timesToCounts.values()){
-                maxCount = Math.max(maxCount, count);
-            }
-        }
-
-        // pad graph top by 10%
-        maxCount *= 1.1;
-
-        log.info("times {}, {} \ncounts {}, {}", minTime, maxTime, minCount, maxCount);
-
-        // PLOTTING
-        for(String name : selectedItems){
-            ArrayList<Long> times = new ArrayList<>();
-            Map<Long, Integer> timesToCounts = trackingcollection.getItemCounts(name);
-            for(Long time : timesToCounts.keySet()){
-                if(time > minTime && time < maxTime)
-                    times.add(time);
-            }
-            times.sort(new Comparator<Long>() {
-                @Override
-                public int compare(Long o1, Long o2) {
-                    return Long.compare(o1, o2);
-                }
-            });
-
-            ArrayList<Integer> counts = new ArrayList<>();
-            for(Long time : times){
-                counts.add(timesToCounts.get(time));
-            }
-
-            if(checkMedian.isSelected()){
-                // TODO: might want to alter the median filter count based on number of observations
-                for(int i = 0; i < counts.size(); i++){
-                    ArrayList<Integer> windowCounts = new ArrayList<>();
-                    for(int j = Math.max(0, i - 2); j < Math.min(counts.size() - 1, j + 2); j++){
-                        windowCounts.add(counts.get(j));
-                    }
-                    windowCounts.sort(new Comparator<Integer>() {
-                        @Override
-                        public int compare(Integer o1, Integer o2) {
-                            return Integer.compare(o1, o2);
-                        }
-                    });
-                    counts.set(i, windowCounts.get(windowCounts.size()/2));
-                }
-            }
-            // TODO: interpolation on counts ^
-
-            int prevX = -1, prevY = -1;
-            for(int i = 0; i < times.size(); i++){
-                long time = times.get(i);
-                int count = counts.get(i);
-                // TODO: padding for axes
-                double rX = (double)(time - minTime) / (maxTime - minTime);
-                double rY = (double)(count - minCount) / (maxCount - minCount);
-                int x = (int)(width * rX);
-                int y = height - (int)(height * rY);
-                log.info("{}({}): {}, {} => rel {}, {} => coord {}, {}", name, i, time, count, rX, rY, x, y);
-                // TODO: different color for each item, ALSO SHOW COLORS IN LIST
-                g.setColor(Color.green);
-                g.fillOval(x-3, y-3, 6, 6);
-                if(prevX >= 0){
-                    g.drawLine(prevX, prevY, x, y);
-                }
-                prevX = x;
-                prevY = y;
-            }
-        }
-        for(float rX = 0.05f; rX <= 0.91; rX += 0.1){
-            for(float rY = 0.05f; rY <= 0.91; rY += 0.1){
-                int x = (int)(width * rX);
-                int y = height - (int)(height * rY);
-
-                g.setColor(Color.WHITE);
-                g.drawString("" + (long)(maxCount * rY), 10, y-30);
-
-                Calendar cal = new GregorianCalendar();
-                cal.setTimeInMillis((long)((maxTime - minTime) * rX) + minTime);
-                String day = "" + cal.get(Calendar.DAY_OF_MONTH);
-                String month = "" + (cal.get(Calendar.MONTH) + 1);
-                String year = "" + (cal.get(Calendar.YEAR) % 100);
-                g.drawString( day + "." + month + "." + year, x + 15, height - 10);
-                log.info("{}", rX);
-            }
-        }
-
+        graph = new Graph(trackingcollection, selectedItems, timeDays, checkMedian.isSelected());
+        graphImage = graph.getImage(width, height);
         ((DrawableJPanel)graphPanel).setImage(graphImage);
         graphPanel.repaint();
         itemList.repaint();
     }
 
-    private void createUIComponents() {
-        graphPanel = new DrawableJPanel();
-    }
+    private void graphMouseMoved(int x, int y){
+        if(graph == null || graphImage == null)
+            return;
+        //log.info("{} {}", x, y);
+        double relativeX = ((double)x / graphPanel.getWidth());
+        double relativeY = ((double)(graphPanel.getHeight() - y) / graphPanel.getHeight());
+        //log.info("=> {} {}", relativeX, relativeY);
 
+        Graph.PlotInfoElement info = graph.getInfoForPoint(relativeX, relativeY);
+        if(info == null) {
+            ((DrawableJPanel)graphPanel).setImage(graphImage);
+        }else {
+            //log.info("info found @ {} {}", info.relativeX, info.relativeY);
+            BufferedImage img = new BufferedImage(graphImage.getWidth(), graphImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = img.createGraphics();
+            g.drawImage(graphImage, 0, 0, null);
+
+            g.setColor(Color.WHITE);
+            g.setStroke(new BasicStroke(2));
+            int foundX = (int) (graphPanel.getWidth() * info.relativeX);
+            int foundY = (int) (graphPanel.getHeight() - graphPanel.getHeight() * info.relativeY);
+            g.drawLine(foundX, foundY - 8, foundX, foundY + 8);
+
+            g.setColor(info.color);
+            g.drawString(info.itemName, x - 60, y - 30);
+            String countString = info.isEstimate ? "~" : "";
+            countString += graph.getCount(info.relativeY);
+            g.drawString(countString, x - 60, y - 15);
+            String timeString = info.isEstimate ? "~" : "";
+            timeString += graph.getTimeStr(info.relativeX);
+            g.drawString(timeString, x - 60, y);
+            ((DrawableJPanel)graphPanel).setImage(img);
+        }
+        graphPanel.repaint();
+    }
 
     /**
      * List cell renderer that highlights the currently graphed entries
