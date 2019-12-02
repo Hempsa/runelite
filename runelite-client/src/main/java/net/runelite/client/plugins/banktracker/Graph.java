@@ -181,7 +181,7 @@ public class Graph {
 
 
                 long time = ((long)((maxTime - minTime) * rX) + minTime);
-                g.drawString( getTimeStr(time), x + 15, height - 10);
+                g.drawString( getTimeStr(rX), x + 15, height - 10);
                 //log.info("{}", rX);
             }
         }
